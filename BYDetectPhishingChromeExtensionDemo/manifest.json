@@ -2,7 +2,7 @@
   "manifest_version": 2,
 
   "name": "BYDetectPhishingDemo",
-  "description": "This extension detects possible phishing and possible phishing.",
+  "description": "This extension detects possible phishing and malicious links within page.",
   "version": "1.0",
 
   "browser_action": {
