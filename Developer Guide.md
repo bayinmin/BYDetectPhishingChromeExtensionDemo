@@ -12,7 +12,7 @@ jquery-3.2.1.min.js
 
 # Chrome Extension Installation
 
-1. Download BYDetectPhishingChromeExtensionDemo from github
+1. Download BYDetectPhishingChromeExtensionDemo from github. Do note that the *test_resources* folder contain static HTML page pointing to known malicious site. The developer/users are suggested to use with care and not to click those dangerous links. For safety, the *test_resources* folder should be deleted off if no test needs to be performed.
 
 2. Locate *process_links.js* and change *GOOGLE_API_KEY* value with valid Google Safe Browsing API key
 
