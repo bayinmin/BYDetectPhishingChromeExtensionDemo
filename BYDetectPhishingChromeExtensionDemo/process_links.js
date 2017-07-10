@@ -5,7 +5,25 @@ var googleThreat = "https://safebrowsing.googleapis.com/v4/threatMatches:find?ke
 
 var threatSearchURL = googleThreat;
 
-threatEntries = []
+var threatEntries = []
+var threats = []
+var encounteredError = 0
+
+var phishing_stats = {
+	"totalLinks": 0,
+	"totalFullLinks": 0,
+	"totalMaliciousLinks": 0,
+}
+
+// Phishing stats updates
+function updateStatsForTotalLinks(count) {
+	phishing_stats.totalLinks = count
+}
+
+// Phishing stats updates
+function updateStatsForTotalMaliciousLinks(count) {
+	phishing_stats.totalMaliciousLinks = count
+}
 
 function processGoogleSuccessResponse(data) {
 
@@ -34,7 +52,6 @@ function processGoogleSuccessResponse(data) {
 // }
 
 	var kMatches = "matches";
-	var threats = []
 
 	if (Object.keys(data).length <= 0) {
 		console.log("no threat")
@@ -48,14 +65,16 @@ function processGoogleSuccessResponse(data) {
 		      	"threat": matches[i].threat["url"]
 			}
 			threats.push(threatObj)
-		}
+		}		
 	}
 
+	// update stats
+	updateStatsForTotalMaliciousLinks(threats.length)
 	console.log(threats)
+	console.log(phishing_stats)
 }
 
-$(document).ready(function () {
-
+function extractAHrefLinksFromBody() {
 	// loop all a elements and extract href and innterHTML
 	$("a").each(function(element) {
     	var linkObj = {
@@ -65,15 +84,30 @@ $(document).ready(function () {
     	
     	// prepare all extracted url to be pass to phishing checker api
     	threatEntries.push({"url": linkObj.href});
-    	limit = limit - 1;
-
-
 	})
+
+	// Remove duplicates and invalid URLs.
+	var kBadPrefix = 'javascript';
+	for (var i = 0; i < threatEntries.length;) {
+	  if (((i > 0) && (threatEntries[i].url == threatEntries[i - 1].url)) ||
+	      (threatEntries[i].url == '') ||
+	      (kBadPrefix == threatEntries[i].url.toLowerCase().substr(0, kBadPrefix.length))) {
+	    threatEntries.splice(i, 1);
+	  } else {
+	    ++i;
+	  }
+	}
+
+	// update stats
+	updateStatsForTotalLinks(threatEntries.length)
+}
+
+function checkLinksWithGoogleSafeBrowsingAPI() {
 
 	var search_data =  {
     "client": {
-      "clientId":      "yourcompanyname",
-      "clientVersion": "1.5.2"
+      "clientId":      "chrome extension test",
+      "clientVersion": "1"
     },
     "threatInfo": {
       "threatTypes":      ["MALWARE", "SOCIAL_ENGINEERING", "POTENTIALLY_HARMFUL_APPLICATION"],
@@ -93,16 +127,29 @@ $(document).ready(function () {
 	  data: JSON.stringify(search_data),
 	  success: function(data) {
 	  	// successfully executed the phishing check call. now pass to handle the check result
-	  	processGoogleSuccessResponse(data)
+	  	processGoogleSuccessResponse(data);
+	  	printDetectionResultToWebpage();
+	  	
 	  },
 	  error: function(data) {
-	  	console.log(data.responseText)
+	  	console.log(data);
+	  	encounteredError = 1
+	  	printDetectionResultToWebpage();
 	  }
 	}).done(function() {
 
 	});
+	console.log("processing done")
+}
 
-	console.log("keep going")
+function printDetectionResultToWebpage() {
+	chrome.extension.sendRequest({"threats": threats, 
+								  "phishing_stats": phishing_stats,
+								  "encounteredError": encounteredError
+								});
+}
 
-   // chrome.extension.sendRequest(linkDic);
+$(document).ready(function () {
+	extractAHrefLinksFromBody();
+	checkLinksWithGoogleSafeBrowsingAPI();
 });

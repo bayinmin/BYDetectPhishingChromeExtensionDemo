@@ -14,14 +14,54 @@ window.onload = function() {
   });
 };
 
+function updateStatsUI(stats) {
+  $('#stats-details').empty();
+  $('<p><b> Total Links Found: </b>' + stats.totalLinks + '</p>').appendTo('#stats-details');
+  $('<p><b> Total Links Malicious: </b>' + stats.totalMaliciousLinks + '</p>').appendTo('#stats-details');
+}
+
+function updateResultUI(threats,stats) {
+  if(threats.length > 0) {
+    $('#result-details').empty();
+    $('<p><b><font color=\'red\'>Phishing attempt detected!</p></font></b>').appendTo('#result');
+
+    for(var i in threats) {
+      var t = threats[i].threat
+      var tt = threats[i].threatType.toLowerCase()
+      var p = threats[i].platformType.toLowerCase()
+      $('<hr style=\"height:1px;border:none;color:#333;background-color:#333;\"/>').appendTo('#result');
+      $('<p> <b><font size=\'2\'>URL Identified</font></b> : <font color=\'red\' size=\'2\'>'+ t +'</font></p>').appendTo('#result');
+      $('<p> <b><font size=\'2\'>Nature of threat:</font></b> <font size=\'2\'>'+ tt +'</p>').appendTo('#result');
+      $('<p> <b><font size=\'2\'>Platform affected:</font></b> <font size=\'2\'>'+ p +'</p>').appendTo('#result');
+      console.log(threats[i])
+    }
+
+    updateStatsUI(stats);
+  }else {
+    $('#result-details').empty();
+    $('<p><b><font color=\'green\'>The page might be safe!</p></font></b>').appendTo('#result');
+    updateStatsUI(stats);
+  }
+}
+
+function updateProcessingErrorUI() {
+  $('#result-details').empty();
+  $('#stats-details').empty();
+  $('<p><b><font color=\'blue\'> Error: Unable to complete detection. </p></font></b>').appendTo('#result');
+  $('<p><b><font color=\'blue\'> Error: Unable to complete detection. </p></font></b>').appendTo('#stats-details');
+}
+
 // call back from process_links.js after processing done
-chrome.extension.onRequest.addListener(function(links) {
-   for(var i in links) {
-      var linkObj = links[i];
-      var para = document.createElement("p");
-      var node = document.createTextNode(linkObj.href);
-      para.appendChild(node);
-      var element = document.getElementById("div1");
-      element.appendChild(para);
-   }
+chrome.extension.onRequest.addListener(function(data) {
+
+  threats = data.threats;
+  stats = data.phishing_stats;
+  isError = data.encounteredError;
+
+  if(isError) {
+    updateProcessingErrorUI();
+  }else {
+    updateResultUI(threats,stats);
+  }
+
 });
